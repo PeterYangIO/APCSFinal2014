@@ -8,7 +8,7 @@ public class Runner{
     private String userInput;
     private int type, direction, diameter,
                     userIntput /** Intput. I'm so clever */, startROW, goalROW, goalCOL;
-    private boolean ON;
+    private boolean on;
     private double slope, normal, userDoubleput;
     private final double GRAVITY = 3;
     Scanner sc = new Scanner(System.in);
@@ -35,7 +35,7 @@ public class Runner{
     
     /** The operating states */
     private void init(){
-        ON = true;
+        on = true;
         System.out.println("Select one of the following options.");
         System.out.println(">Play\n>Instructions\n>Exit");
         userInput = "";
@@ -66,7 +66,7 @@ public class Runner{
     }
     private void playGame(){
         System.out.println("\f");
-        while (ON){
+        while (on){
             updateBoard();
             printBoard();
             doInput();
@@ -90,12 +90,12 @@ public class Runner{
     
     /** Used in playGame() */
     private void updateBoard(){
-        /** Sets type */
+        //Sets type
         if (Math.random() < 0.333) type = NORMAL;
         else if (Math.random() < 0.667) type = DIRECTION;
         else type = DIAMETER;
         
-        /** Assigns values according to type */
+        ///Assigns value according to type
         if (type == NORMAL){
             diameter = 1;
             if (goalCOL > startCOL) //If the goal is to the right of it
@@ -117,7 +117,7 @@ public class Runner{
             else direction = 180;   //If the goal is right under. Yay free points.
         }
         
-        /** Sets game objects coordinates */
+        //Sets game objects' coordinates
         startROW = (int)(Math.random() * ROWS);
         boolean OK = false;
         while (!OK){    //continues to generate random points until they are not equal to one another;
@@ -126,7 +126,7 @@ public class Runner{
             if ((startCOL != goalCOL) && (startROW != goalROW)) OK = true;
         }
         
-        /** Places game objects into array */
+        //Places game objects into array
         board[startROW][startCOL] = "O";
         board[goalROW][goalCOL] = "X";
     }
@@ -168,25 +168,27 @@ public class Runner{
         boolean isDone = false;
         int r = startROW, c = startCOL;
         double incGrav = GRAVITY;
-        while (!isDone){
+        
+        if (type == DIAMETER){
+            
+        }
+        while (!isDone){    //Prints projectile path one by one
             if (c + 1 < COLS) c += 1;
             else isDone = true;
-            if (calculateNewRow(r, incGrav) < ROWS ){
-                r = calculateNewRow(r, incGrav);
-            }
+            if (calculateNewRow(r, incGrav) < ROWS ) r = calculateNewRow(r, incGrav);
             else isDone = true;
-            
-            if (board[r][c].equals("X")) isDone = true;
+            if ((type != DIAMETER) && board[r][c] != null && board[r][c].equals("X")) isDone = true;//Using .equals on a null didn't go too well
             else board[r][c] = "O";
-            
             printBoard();
+            wait(100);
         }
+        printScore();
     }
     private void clearBoard(){
         board = new String[ROWS][COLS];
         System.out.println("Hit enter to play another round, or type anything before hitting enter to return to the main menu.");
         userInput = sc.nextLine();
-        if (!userInput.equals("")) ON = false;  //else do nothing
+        if (!userInput.equals("")) on = false;  //else do nothing
     }
     
     /** Used in methods within other methods */
@@ -224,10 +226,93 @@ public class Runner{
     public double toSlope(int deg){
         return Math.tan(Math.toRadians(deg));
     }
+    private double getShortestDistance(){
+        double shortest = Double.MAX_VALUE;
+        for (int r = 0; r < ROWS; r++){
+            for (int c = 0; c < COLS; c++){
+                if ((board[r][c] != null) && board[r][c].equals("O")){  //.equals on null doesn't go too well, so check for null first.
+                    if (distance(r, goalROW, c, goalCOL) < shortest) shortest = distance(r, goalROW, c, goalCOL);
+                }
+            }
+        }
+        return shortest;
+    }
+    private double distance(int x1, int y1, int x2, int y2){
+        return Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2));
+    }
+    private void wait(int ms){
+        try{
+            Thread.sleep(ms);
+        }
+        catch (Exception e){
+            System.out.println("This computer has insomnia.");
+        }
+    }
+    private void printScore(){
+        int smallestValue;
+        int currScore = 100;
+        int unitsOff = 0;
+        if (type == DIAMETER){
+            smallestValue = (int)(getShortestDistance() + 0.5);
+            while (diameter > smallestValue){
+                diameter--;
+                unitsOff++;
+                currScore -= 10;
+            }
+            while (diameter < smallestValue){
+                diameter++;
+                unitsOff++;
+                currScore -= 10;
+            }
+        }
+        else{
+            smallestValue = 0;
+            double closest = getShortestDistance();
+            while (closest > smallestValue){
+                closest--;
+                unitsOff++;
+                currScore -= 10;
+            }
+            while (closest < smallestValue){
+                closest++;
+                unitsOff++;
+                currScore -= 10;
+            }
+        }
+        System.out.println("You were " + unitsOff + " units off. You have been awarded " + currScore + " points.");
+        switch (currScore){
+            case 100: System.out.println("Amazing job!"); break;
+            case 90 : System.out.println("Great job!"); break;
+            case 80 : System.out.println("Good job!"); break;
+            case 70 : System.out.println("Fair job."); break;
+            case 60 : System.out.println("Mediocre performance."); break;
+            case 50 : System.out.println("Better luck next time."); break;
+            case 40 : System.out.println("You're not very good at this game."); break;
+            case 30 : System.out.println("I'm not even sure how this score is possible."); break;
+            case 20 : System.out.println("I feel like you just hit a random number. Don't."); break;
+            case 10 : System.out.println("Just like your APCS grade."); break;
+            default :
+            {
+                System.out.println("I don't think you should be allowed near a computer.");
+                System.out.println("Deleting system32 in");
+                for (int i = 10; i > 0; i--){
+                    System.out.println(i);  wait(250);
+                    System.out.print(".");  wait(250);
+                    System.out.print(".");  wait(250);
+                    System.out.print(".");  wait(250);
+                }
+                while (true){
+                    System.out.println();
+                    for (int i = 0; i < 50; i++){
+                        System.out.print((int)(Math.random() + 0.5));
+                    }
+                }
+            }
+        }
+    }
+    
+    /** Either calculating distance or calculating score isn't working correctly. */
     /**
-     * private double getShortestDistance() //loops through all "O"s and finds closest to "X". Returns that distance.
-     * private double distance(int x1, int y1, int x2, int y2) //distance formula to be used in getShortestDistance()
-     * private void calculateScore() //calls getShortestDistance() and does some sort of math. Will need to add variables/print methods to class
      * vf = vo + at, vf^2 = vo^2 + 2ax, x = xo + vo*t + 0.5at^2
      * vf = final velocity, vo = initial velocity, a = acceleration, t = time in seconds, x = distance, xo = initial distance
      */
