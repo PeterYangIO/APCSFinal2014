@@ -2,7 +2,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class RunnerBack{
+public class RunnerBackup{
     private String[][] board;
     private final int ROWS = 20, COLS = 20, startCol = 0;
     private String userInput;

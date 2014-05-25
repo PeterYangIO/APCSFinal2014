@@ -1,5 +1,3 @@
-import java.io.File;
-import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Runner{
@@ -10,7 +8,7 @@ public class Runner{
                     userIntput /** Intput. I'm so clever */, startRow, goalRow, goalCol;
     private boolean on;
     private double slope, normal, userDoubleput, doubleRow;
-    private final double GRAVITY = 3;
+    private final double GRAVITY = 2;
     Scanner sc = new Scanner(System.in);
     
     /** Types */
@@ -49,20 +47,7 @@ public class Runner{
         else currState = EXIT;
     }
     private void printInstructions(){
-        System.out.print("\f");
-        ArrayList<String> lines = new ArrayList<String>();
-        try{
-            Scanner file = new Scanner(new File("README.txt"));
-            while (file.hasNext()){
-                lines.add(file.nextLine());
-            }
-        }
-        catch (Exception e){
-            System.out.println("Bad file.");
-        }
-        for (String line : lines){
-            System.out.println(line);
-        }
+        FileReader.readFile("README.TXT");
         System.out.println("Hit enter to return to the menu.");
         sc.nextLine();
         init();
@@ -72,6 +57,7 @@ public class Runner{
         while (on){
             updateBoard();
             printBoard();
+            System.out.println("Enter in a " + types[type] + ":");
             doInput();
             animateBoard();
             clearBoard();
@@ -98,18 +84,10 @@ public class Runner{
         else  type = DIRECTION;
         
         ///Assigns value according to type
-        if (type == NORMAL){
-            if (goalCol > startCol) //If the goal is to the right of it
-                direction = (int)(Math.random() * 180) - 90;
-            else if (goalCol < startCol) //If the goal is to the left of it
-                direction = (int)(Math.random() * 180 + 90);
-            else direction = 180;   //If the goal is right under. Yay free points.
-        }
+        if (type == NORMAL) direction = (int)Math.random() * 180 - 90;
         else normal = (int)(Math.random() * 20);    //type == DIRECTION in this case (Probably)
         
-        
         //Sets game objects' coordinates
-        /**startRow = (int)(Math.random() * ROWS);*/
         startRow = 5;
         doubleRow = startRow;
         boolean OK = false;
@@ -143,7 +121,6 @@ public class Runner{
         
         if (type != NORMAL) System.out.println("Normal: " + normal); 
         if (type != DIRECTION) System.out.println("Direction: " + direction  + " degrees");
-        System.out.println("Enter in a " + types[type] + ":");
     }
     private void doInput(){
         if (type == DIRECTION){
@@ -174,20 +151,22 @@ public class Runner{
                 isDone = true;
             }
             finally{
-                if (!isDone){
-                    if (board[r][c] != null && board[r][c].equals("X")) isDone = true; //Using .equals on a null didn't go too well
+                if (!isDone){ //If it didn't catch, then it'll keep doing its thing.
+                    if (board[r][c] != null && board[r][c].equals("X")) isDone = true; //Cannot use .equals(obj) on null as null is not an object.
                     else{
-                        if (difference > 1){    //Interpolates between the two calculated points by drawing a line between them
+                        if (difference > 1){ //Interpolates between the two calculated points by drawing a line between them
                             if (prevRow > r){
                                 for (int i = prevRow - 1; i > r ; i--){
-                                    board[i][c] = "O";
+                                    if (i <= prevRow + (difference/2)) board[i][c - 1] = "O";
+                                    else board[i][c] = "O";
                                     printBoard();
                                     wait(WAIT_TIME);
                                 }
                             }
                             else{
                                 for (int i = prevRow + 1; i < r; i++){
-                                    board[i][c] = "O";
+                                    if (i <= prevRow + (difference/2)) board[i][c - 1] = "O";
+                                    else board[i][c] = "O";
                                     printBoard();
                                     wait(WAIT_TIME);
                                 }
@@ -196,20 +175,22 @@ public class Runner{
                         board[r][c] = "O";
                     }
                 }
-                else{
+                else{//Interpolates points until it reaches the end of the board
                     if (prevRow > r){
-                        while (prevRow > 0){
-                            board[prevRow][c] = "O";
-                            printBoard();
+                        while (prevRow > 1){// && board[prevRow][c] != null && !board[prevRow][c].equals("X")){
                             prevRow--;
+                            if (board[prevRow][c] != null && !board[prevRow][c].equals("X")) break;
+                            else board[prevRow][c] = "O";
+                            printBoard();
                             wait(WAIT_TIME);
                         }
                     }
                     else{
-                        while (prevRow < ROWS){
-                            board[prevRow][c] = "O";
-                            printBoard();
+                        while (prevRow < ROWS - 1){// && board[prevRow][c] != null && !board[prevRow][c].equals("X")){
                             prevRow++;
+                            if (board[prevRow][c] != null && !board[prevRow][c].equals("X")) break;
+                            else board[prevRow][c] = "O";
+                            printBoard();
                             wait(WAIT_TIME);
                         }
                     }
@@ -268,7 +249,6 @@ public class Runner{
          * The new gravity factor pulls down the y (increases the row).
          * This is now the y (row) and returns that
          */
-        
         doubleRow += slope;
         newRow = doubleRow;
         gravFactor = gravity * (1/normal);
@@ -283,7 +263,7 @@ public class Runner{
         double shortest = Double.MAX_VALUE;
         for (int r = 0; r < ROWS; r++){
             for (int c = 0; c < COLS; c++){
-                if ((board[r][c] != null) && board[r][c].equals("O")){  //.equals on null doesn't go too well, so check for null first.
+                if ((board[r][c] != null) && board[r][c].equals("O")){ //Cannot use .equals(obj) on null as null is not an object.
                     if (distance(r, c, goalRow, goalCol) < shortest) shortest = distance(r, c, goalRow, goalCol);
                 }
             }
@@ -330,7 +310,7 @@ public class Runner{
             case 30 : System.out.println("I'm not even sure how a score this bad is possible."); break;
             case 20 : System.out.println("I feel like you just hit a random number. Don't."); break;
             case 10 : System.out.println("Just like your APCS grade."); break;
-            default :/**
+            default :
             {
                 System.out.println("I don't think you should be allowed near a computer.");
                 System.out.println("Deleting system32 in");
@@ -347,7 +327,6 @@ public class Runner{
                     }
                 }
             }
-            */
         }
     }
 }
