@@ -2,11 +2,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class Runner{
+public class RunnerBack{
     private String[][] board;
-    private final int ROWS = 20, COLS = 20, startCol = 0, WAIT_TIME = 100;
+    private final int ROWS = 20, COLS = 20, startCol = 0;
     private String userInput;
-    private int type, direction,
+    private int type, direction, diameter,
                     userIntput /** Intput. I'm so clever */, startRow, goalRow, goalCol;
     private boolean on;
     private double slope, normal, userDoubleput, doubleRow;
@@ -14,8 +14,8 @@ public class Runner{
     Scanner sc = new Scanner(System.in);
     
     /** Types */
-    private String[] types = {"normal", "direction"};
-    private final int NORMAL = 0, DIRECTION = 1;
+    private String[] types = {"normal", "direction", "diameter"};
+    private final int NORMAL = 0, DIRECTION = 1, DIAMETER = 2;
     
     /** States */
     private static final int MENU = 0, PLAY = 1, INSTRUCTIONS = 2, EXIT = 3;
@@ -94,19 +94,34 @@ public class Runner{
     /** Used in playGame() */
     private void updateBoard(){
         //Sets type
-        if (Math.random() < 0.5) type = NORMAL;
-        else  type = DIRECTION;
+        /**
+        if (Math.random() < 0.333) type = NORMAL;
+        else if (Math.random() < 0.667) type = DIRECTION;
+        else type = DIAMETER;
+        */
+        type = NORMAL;
         
         ///Assigns value according to type
         if (type == NORMAL){
+            diameter = 1;
             if (goalCol > startCol) //If the goal is to the right of it
                 direction = (int)(Math.random() * 180) - 90;
             else if (goalCol < startCol) //If the goal is to the left of it
                 direction = (int)(Math.random() * 180 + 90);
             else direction = 180;   //If the goal is right under. Yay free points.
         }
-        else normal = (int)(Math.random() * 20);    //type == DIRECTION in this case (Probably)
-        
+        else if (type == DIRECTION){
+            diameter = 1;
+            normal = (int)(Math.random() * 20);
+        }
+        else{
+            normal = (int)(Math.random() * 20);
+            if (goalCol > startCol) //If the goal is to the right of it
+                direction = (int)(Math.random() * 180) - 90;
+            else if (goalCol < startCol) //If the goal is to the left of it
+                direction = (int)(Math.random() * 180 + 90);
+            else direction = 180;   //If the goal is right under. Yay free points.
+        }
         
         //Sets game objects' coordinates
         /**startRow = (int)(Math.random() * ROWS);*/
@@ -146,9 +161,10 @@ public class Runner{
         System.out.println("Enter in a " + types[type] + ":");
     }
     private void doInput(){
-        if (type == DIRECTION){
+        if (type == DIRECTION || type == DIAMETER){
             takeIntput();
-            direction = userIntput;
+            if (type == DIRECTION) direction = userIntput;
+            else diameter = userIntput;
         }
         else if (type == NORMAL){
             takeDoubleput();
@@ -158,15 +174,17 @@ public class Runner{
     }
     private void animateBoard(){
         boolean isDone = false;
-        int r = startRow, c = startCol, prevRow = r, difference = 0;
+        int r = startRow, c = startCol;
         double incGrav = GRAVITY;
         String arbitraryValue = "";
+        if (type == DIAMETER){
+            
+        }
         while (!isDone){    //Prints projectile path one by one
-            if (c + 1 < COLS) c++;
+            if (c + 1 < COLS) c += 1;
             else isDone = true;
-            prevRow = r;
-            r = calculateNewRow(incGrav);
-            difference = Math.abs(prevRow - r);
+            if (calculateNewRow(incGrav) < ROWS ) r = calculateNewRow(incGrav);
+            else isDone = true;
             try{
                 arbitraryValue = board[r][c];   //If there's an outofbounds exception it'll go to catch.
             }
@@ -176,48 +194,12 @@ public class Runner{
             finally{
                 if (!isDone){
                     if (board[r][c] != null && board[r][c].equals("X")) isDone = true; //Using .equals on a null didn't go too well
-                    else{
-                        if (difference > 1){    //Interpolates between the two calculated points by drawing a line between them
-                            if (prevRow > r){
-                                for (int i = prevRow - 1; i > r ; i--){
-                                    board[i][c] = "O";
-                                    printBoard();
-                                    wait(WAIT_TIME);
-                                }
-                            }
-                            else{
-                                for (int i = prevRow + 1; i < r; i++){
-                                    board[i][c] = "O";
-                                    printBoard();
-                                    wait(WAIT_TIME);
-                                }
-                            }
-                        }
-                        board[r][c] = "O";
-                    }
-                }
-                else{
-                    if (prevRow > r){
-                        while (prevRow > 0){
-                            board[prevRow][c] = "O";
-                            printBoard();
-                            prevRow--;
-                            wait(WAIT_TIME);
-                        }
-                    }
-                    else{
-                        while (prevRow < ROWS){
-                            board[prevRow][c] = "O";
-                            printBoard();
-                            prevRow++;
-                            wait(WAIT_TIME);
-                        }
-                    }
+                    else board[r][c] = "O";
                 }
             }
             printBoard();
             incGrav *= 2; //Gravity gets stronger over time
-            wait(WAIT_TIME);
+            wait(100);
         }
         printScore();
     }
@@ -268,7 +250,6 @@ public class Runner{
          * The new gravity factor pulls down the y (increases the row).
          * This is now the y (row) and returns that
          */
-        
         doubleRow += slope;
         newRow = doubleRow;
         gravFactor = gravity * (1/normal);
@@ -302,23 +283,37 @@ public class Runner{
         }
     }
     private void printScore(){
+        int smallestValue;
         int currScore = 100;
         int unitsOff = 0;
-        double closest = getShortestDistance();
-        while (closest > 0){
-            closest--;
-            unitsOff++;
-            currScore -= 10;
+        if (type == DIAMETER){
+            smallestValue = (int)(getShortestDistance() + 0.5);
+            while (diameter > smallestValue){
+                diameter--;
+                unitsOff++;
+                currScore -= 10;
+            }
+            while (diameter < smallestValue){
+                diameter++;
+                unitsOff++;
+                currScore -= 10;
+            }
         }
-        while (closest < 0){
-            closest++;
-            unitsOff++;
-            currScore -= 10;
+        else{
+            smallestValue = 0;
+            double closest = getShortestDistance();
+            while (closest > smallestValue){
+                closest--;
+                unitsOff++;
+                currScore -= 10;
+            }
+            while (closest < smallestValue){
+                closest++;
+                unitsOff++;
+                currScore -= 10;
+            }
         }
-        System.out.print("You were " + unitsOff);
-        if (unitsOff != 1) System.out.print(" units");
-        else System.out.print(" unit");
-        System.out.println(" off. You have been awarded " + currScore + " points.");
+        System.out.println("You were " + unitsOff + " units off. You have been awarded " + currScore + " points.");
         switch (currScore){
             case 100: System.out.println("Amazing job!"); break;
             case 90 : System.out.println("Great job!"); break;
@@ -350,4 +345,37 @@ public class Runner{
             */
         }
     }
+    /**
+    private void addCircle(int centRow, int centCol, int radius){
+        //(x - h)^2 + (y - k)^2 = r^2
+        //h, k = center
+        //(x - h )^2 = r^2 -(y-k)^2)
+        //x = Math.sqrt(Math.pow(r, 2) - Math.pow(y-k, 2)) + h
+        //x = Maty.sqrt(Math.pow(radius, 2) - Math.pow(y - r, 2)) + c;
+        int startCol = 0;   //calculate this
+        int endCol = 10;    //calculate this
+        int newCol, newRow; 
+        for (int i = startCol; i < endCol; i++){
+            newCol = i;
+            newRow = circleEquation(newCol, goalRow, goalCol, diameter/2);
+            if (!(newRow < ROWS || newRow < 0)){    //else is out of bounds and doesn't attempt to draw out of index
+                board[newCol][newRow] = "X";
+                //how2otherside of circle
+            }
+        }
+    }
+    private int circleEquation(int currCol, int centRow, int centCol, int radius){
+        //returns a row value from an inputted col
+        int difference = currCol - centRow;
+        if (difference < 0) difference = -difference;
+        return (int)(Math.sqrt(Math.pow(radius, 2) - Math.pow(difference, 2)) + centCol);
+    }
+    */
+    
+    //Check getShortestDistance(). distance() appears to work correctly.
+    //May scratch the circle idea in replacement of gravity value.
+    /**
+     * vf = vo + at, vf^2 = vo^2 + 2ax, x = xo + vo*t + 0.5at^2
+     * vf = final velocity, vo = initial velocity, a = acceleration, t = time in seconds, x = distance, xo = initial distance
+     */
 }
