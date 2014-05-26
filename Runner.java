@@ -6,7 +6,10 @@ public class Runner{
             if (game.currState == game.MENU) game.mainMenu();
             else if (game.currState == game.SETTINGS) game.doSettings();
             else if (game.currState == game.INSTRUCTIONS) game.printInstructions();
-            else if (game.currState == game.PLAY) game.playGame();
+            else if (game.currState == game.PLAY){
+                if (game.settings[game.SANDBOX] == 0) game.playGame();
+                else game.playSandbox();
+            }
             else if (game.currState == game.EXIT){
                 System.out.println("Thank you for using this program.\n    -Peter Yang");
                 break;

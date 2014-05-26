@@ -22,9 +22,9 @@ public class GameCode{
     public static int currState;
     
     /** Settings */
-    private int[] defaults = {20, 20, 50};
-    private int[] settings = new int[3];
-    private final int ROWS = 0, COLS = 1, WAIT_TIME = 2;
+    private int[] defaults = {20, 20, 50, 0};
+    public int[] settings = new int[4];
+    public final int ROWS = 0, COLS = 1, WAIT_TIME = 2, SANDBOX = 3;
     /** The operating states */
     public void init(){
         currState = MENU;
@@ -51,6 +51,7 @@ public class GameCode{
         System.out.println("Rows: " + settings[ROWS]);
         System.out.println("Columns: " + settings[COLS]);
         System.out.println("Wait Time: " + settings[WAIT_TIME] + "ms");
+        System.out.println("Sandbox: " + binaryToBoolean(settings[SANDBOX]));
         
         testSettings();
         if (userInput.equals("Rows")){
@@ -64,6 +65,10 @@ public class GameCode{
         else if (userInput.equals("Wait Time")){
             takeIntput();
             settings[WAIT_TIME] = userIntput;
+        }
+        else if (userInput.equals("Sandbox")){
+            if (takeBoolean()) settings[SANDBOX] = 1;
+            else settings[SANDBOX] = 0;
         }
         else if (userInput.equals("Defaults")){
             for (int i = 0; i < defaults.length; i++){
@@ -91,10 +96,25 @@ public class GameCode{
         while (on){
             updateBoard();
             printBoard();
+            if (type != SPEED) System.out.println("Speed: " + speed); 
+            if (type != DIRECTION) System.out.println("Direction: " + direction  + " degrees");
             System.out.println("Enter in a " + types[type] + ":");
             doInput();
             animateBoard();
             clearBoard();   //There is where on/off is determined
+        }
+        currState = MENU;
+    }
+    public void playSandbox(){
+        on = true;
+        board = new String[settings[ROWS]][settings[COLS]];
+        System.out.print("\f");
+        while (on){
+            sandboxUpdateBoard();
+            System.out.println("Speed: " + speed); 
+            System.out.println("Direction: " + direction  + " degrees");
+            animateBoard();
+            clearBoard();
         }
         currState = MENU;
     }
@@ -115,11 +135,12 @@ public class GameCode{
     /** Used in doSettings() */
     private void testSettings(){
         String temp = sc.nextLine().toLowerCase();
-        if (temp.equals("Rows") || temp.indexOf("r") == 0) userInput = "Rows";
-        else if (temp.equals("Columns") || temp.indexOf("c") == 0) userInput = "Cols";
-        else if (temp.equals("Wait Time") || temp.indexOf("w") == 0) userInput = "Wait Time";
-        else if (temp.equals("Defaults") || temp.indexOf("d") == 0) userInput = "Defaults";
-        else if (temp.equals("Exit") || temp.indexOf("e") == 0) userInput = "Exit";
+        if (temp.equals("rows") || temp.indexOf("r") == 0) userInput = "Rows";
+        else if (temp.equals("columns") || temp.indexOf("c") == 0) userInput = "Cols";
+        else if (temp.equals("wait Time") || temp.indexOf("w") == 0) userInput = "Wait Time";
+        else if (temp.equals("defaults") || temp.indexOf("d") == 0) userInput = "Defaults";
+        else if (temp.equals("exit") || temp.indexOf("e") == 0) userInput = "Exit";
+        else if (temp.equals("sandbox") || temp.indexOf("s") == 0) userInput = "Sandbox";
         else{
             System.out.println("Not a valid option. Please try again.");
             testSettings();
@@ -167,11 +188,10 @@ public class GameCode{
         for (int i = 0; i <= settings[COLS]; i++) System.out.print(" * ");
         System.out.println();
         
-        System.out.print("Total Score: " + totalScore);
-        if (totalScore < 100) System.out.print("\t");
-        System.out.println("\t\t\t Average per Round: " + averageScore);
-        if (type != SPEED) System.out.println("Speed: " + speed); 
-        if (type != DIRECTION) System.out.println("Direction: " + direction  + " degrees");
+        System.out.print("Total Score: " + totalScore + " points from " + roundsPlayed);
+        if (roundsPlayed != 1) System.out.println(" rounds.");
+        else System.out.println(" round.");
+        System.out.println("Average per Round: " + averageScore);
     }
     private void doInput(){
         takeDoubleput();
@@ -225,7 +245,7 @@ public class GameCode{
                 }
                 else if (!hitEdge){ //Interpolates points until it reaches the end of the board
                     if (prevRow > r){
-                        while (prevRow > 1){
+                        while (prevRow > 0){
                             prevRow--;
                             board[prevRow][c] = "O";
                             printBoard();
@@ -253,6 +273,71 @@ public class GameCode{
         System.out.println("Hit enter to play another round, or type anything before hitting enter to return to the main menu.");
         userInput = sc.nextLine();
         if (!userInput.equals("")) on = false; //else the loop exectues again
+    }
+    
+    /** Used in playSandbox() */
+    private void sandboxUpdateBoard(){
+        boolean OK = false;
+        boolean superOK = false;
+        //Setting game objects
+        System.out.println("Enter a row for the start point (between 0 and " + (settings[ROWS] - 1) + ").");
+        while (!OK){
+            takeIntput();
+            if (userIntput < 0 || userIntput > settings[ROWS] - 1) System.out.println("That value is not within the domain. Please enter another value.");
+            else OK = true;
+        }
+        startRow = userIntput;
+        doubleRow = startRow;
+        
+        System.out.println("Enter a column for the start point (between 0 and " + (settings[COLS] - 1) + ").");
+        OK = false;
+        while (!OK){
+            takeIntput();
+            if (userIntput < 0 || userIntput > settings[COLS] - 1) System.out.println("That value is not within the domain. Please enter another value.");
+            else OK = true;
+        }
+        startCol = userIntput;
+        
+        while (!superOK){
+            System.out.println("Enter a row for the goal point (between 0 and " + (settings[ROWS] - 1) + ").");
+            OK = false;
+            while (!OK){
+                takeIntput();
+                if (userIntput < 0 || userIntput > settings[ROWS] - 1) System.out.println("That value is not within the domain. Please enter another value.");
+                else OK = true;
+            }
+            goalRow = userIntput;
+            
+            System.out.println("Enter a column for the goal point (between 0 and " + (settings[COLS] - 1) + ").");
+            OK = false;
+            while (!OK){
+                takeIntput();
+                if (userIntput < 0 || userIntput > settings[COLS] - 1) System.out.println("That value is not within the domain. Please enter another value.");
+                else OK = true;
+            }
+            goalCol = userIntput;
+            
+            if ((startRow == goalRow) && (startCol == goalCol)){    //Makes sure the two points don't overlap
+                System.out.println("Your goal cannot overlap your start. Please enter in new values for your goal.");
+            }
+            else superOK = true;
+        }
+        //Entering objects into array
+        board[startRow][startCol] = "O";
+        board[goalRow][goalCol] = "X";
+        
+        //Setting physics values
+        System.out.println("Enter a speed value.");
+        takeDoubleput();
+        speed = userDoubleput;
+        System.out.println("Enter a direction.");
+        takeDoubleput();
+        direction = userDoubleput;
+    }
+    
+    public boolean binaryToBoolean(int i){
+        if (i == 1) return true;
+        return false;
     }
     
     /** Used in methods within other methods */
@@ -283,6 +368,16 @@ public class GameCode{
             worked = false;
         }
         if (!worked) takeDoubleput();
+    }
+    private boolean takeBoolean(){
+        System.out.println("Enter \"true\" to enable, or \"false\" to disable.");
+        String input = sc.nextLine().toLowerCase();
+        if (input.equals("true") || input.indexOf("t") == 0) return true;
+        else if (input.equals("false") || input.indexOf("f") == 0) return false;
+        else{
+            System.out.println("Not a valid input. Please try again. Or not. I'm a console, not a cop.");
+            return takeBoolean();
+        }
     }
     private int calculateNewRow(double gravity){
         double slope = -toSlope(direction); //negative because row, col is really y, x

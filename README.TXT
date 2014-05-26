@@ -8,6 +8,9 @@ to make a selection. In the settings, rows and columns correspond to the dimensi
 of the game board. The wait time is recorded in milliseconds and corresponds to how
 much delay there is between each frame of the projectile animation.
 
+Sandbox mode, which can be toggled within the settings, allows you to customize
+every value within the gameboard.
+
 The board is surrounded by asterisks (*) which act as the border. To the
 left, there will be your start point (O). The starting point is generated
 within the middle 50% vertical values, but always on the left-most side.
